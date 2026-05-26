@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Resizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & tokens ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #111118;
+      --border:    #1e1e2e;
+      --accent:    #e8ff47;
+      --accent2:   #47ffe8;
+      --text:      #e8e8f0;
+      --muted:     #55556a;
+      --radius:    12px;
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px;
+      overflow-x: hidden;
+    }
+
+    /* grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout ───────────────────────────────────────────────────── */
+    .wrapper {
+      width: 100%;
+      max-width: 720px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      margin-bottom: 48px;
+    }
+
+    .label {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: var(--font-head);
+      font-size: clamp(2.4rem, 6vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    /* ── Config notice ────────────────────────────────────────────── */
+    #config-notice {
+      background: #1a0a0a;
+      border: 1px solid #ff4747;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      font-size: 12px;
+      color: #ff8080;
+      margin-bottom: 32px;
+      display: none;
+    }
+
+    #config-notice.visible { display: block; }
+
+    /* ── Drop zone ────────────────────────────────────────────────── */
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 56px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    #drop-zone:hover,
+    #drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(232,255,71,0.04);
+    }
+
+    #drop-zone .icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+      display: block;
+      filter: grayscale(1) brightness(0.6);
+      transition: filter 0.2s;
+    }
+
+    #drop-zone:hover .icon { filter: none; }
+
+    #drop-zone p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    #drop-zone strong { color: var(--text); }
+
+    #file-input { display: none; }
+
+    /* ── Progress ─────────────────────────────────────────────────── */
+    #progress-area {
+      display: none;
+      margin-top: 32px;
+    }
+
+    #progress-area.visible { display: block; }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .step:last-child { border-bottom: none; }
+
+    .step-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      background: var(--border);
+      color: var(--muted);
+      transition: all 0.3s;
+    }
+
+    .step.active .step-icon {
+      background: rgba(232,255,71,0.15);
+      color: var(--accent);
+      animation: pulse 1.2s infinite;
+    }
+
+    .step.done .step-icon {
+      background: rgba(232,255,71,0.2);
+      color: var(--accent);
+      animation: none;
+    }
+
+    .step.error .step-icon {
+      background: rgba(255,71,71,0.2);
+      color: #ff4747;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.5; }
+    }
+
+    .step-label { flex: 1; }
+    .step-detail { color: var(--muted); font-size: 11px; }
+
+    /* ── Results ──────────────────────────────────────────────────── */
+    #results {
+      display: none;
+      margin-top: 40px;
+    }
+
+    #results.visible { display: block; }
+
+    .results-header {
+      font-family: var(--font-head);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--accent);
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .image-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .image-card:hover {
+      border-color: var(--accent2);
+      transform: translateY(-3px);
+    }
+
+    .image-card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+    }
+
+    .image-card-info {
+      padding: 12px;
+    }
+
+    .image-card-title {
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: capitalize;
+      margin-bottom: 4px;
+    }
+
+    .image-card-meta {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .image-card a {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--accent2);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+
+    .image-card a:hover { text-decoration: underline; }
+
+    /* ── Reset button ─────────────────────────────────────────────── */
+    #reset-btn {
+      display: none;
+      margin-top: 32px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    #reset-btn:hover { border-color: var(--text); color: var(--text); }
+    #reset-btn.visible { display: block; }
+
+    /* ── Footer ───────────────────────────────────────────────────── */
+    footer {
+      margin-top: 64px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <p class="label">AWS · Lambda · S3 · Terraform</p>
+      <h1>Image<br /><span>Resizer</span></h1>
+      <p class="subtitle">
+        Upload an image and watch it flow through an event-driven AWS pipeline —<br />
+        S3 trigger → Lambda → three resized variants, ready to download.
+      </p>
+    </header>
+
+    <!-- Config warning -->
+    <div id="config-notice">
+      ⚠ <strong>API_BASE_URL not set.</strong> Open <code>frontend/index.html</code>,
+      find the <code>API_BASE_URL</code> constant at the top of the script, and paste in
+      the URL from <code>terraform output api_base_url</code>.
+    </div>
+
+    <!-- Drop zone -->
+    <div id="drop-zone" role="button" tabindex="0" aria-label="Upload image">
+      <span class="icon">🖼</span>
+      <p><strong>Drop an image here</strong></p>
+      <p>or click to browse · JPG, PNG, WEBP, GIF</p>
+    </div>
+    <input type="file" id="file-input" accept="image/*" />
+
+    <!-- Steps -->
+    <div id="progress-area">
+      <div class="step" id="step-presign">
+        <div class="step-icon">1</div>
+        <div>
+          <div class="step-label">Getting upload URL</div>
+          <div class="step-detail" id="step-presign-detail">Requesting presigned S3 URL from API…</div>
+        </div>
+      </div>
+      <div class="step" id="step-upload">
+        <div class="step-icon">2</div>
+        <div>
+          <div class="step-label">Uploading to S3</div>
+          <div class="step-detail" id="step-upload-detail">Sending image directly to S3…</div>
+        </div>
+      </div>
+      <div class="step" id="step-resize">
+        <div class="step-icon">3</div>
+        <div>
+          <div class="step-label">Lambda resizing</div>
+          <div class="step-detail" id="step-resize-detail">S3 event triggered · Lambda processing…</div>
+        </div>
+      </div>
+      <div class="step" id="step-done">
+        <div class="step-icon">4</div>
+        <div>
+          <div class="step-label">Ready</div>
+          <div class="step-detail" id="step-done-detail">Waiting for outputs…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+      <p class="results-header">✓ Resized variants</p>
+      <div class="image-grid" id="image-grid"></div>
+    </div>
+
+    <button id="reset-btn">↺ Upload another image</button>
+
+    <footer>Infrastructure as Code · github.com/PantelisTsagkas</footer>
+  </div>
+
+  <script>
+    // ── CONFIG — paste your terraform output here ──────────────────────────────
+    const API_BASE_URL = "https://k933zzmub6.execute-api.eu-west-1.amazonaws.com"; 
+    // ──────────────────────────────────────────────────────────────────────────
+
+    const dropZone    = document.getElementById("drop-zone");
+    const fileInput   = document.getElementById("file-input");
+    const progressArea = document.getElementById("progress-area");
+    const resultsEl   = document.getElementById("results");
+    const imageGrid   = document.getElementById("image-grid");
+    const resetBtn    = document.getElementById("reset-btn");
+    const configNotice = document.getElementById("config-notice");
+
+    if (!API_BASE_URL) configNotice.classList.add("visible");
+
+    // ── Drag & drop ────────────────────────────────────────────────────────────
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith("image/")) processFile(file);
+    });
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") fileInput.click(); });
+    fileInput.addEventListener("change", () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
+
+    // ── Step helpers ───────────────────────────────────────────────────────────
+    function setStep(id, state, detail) {
+      const el = document.getElementById(id);
+      el.classList.remove("active", "done", "error");
+      if (state) el.classList.add(state);
+      const detailEl = document.getElementById(`${id}-detail`);
+      if (detail && detailEl) detailEl.textContent = detail;
+    }
+
+    // ── Main flow ──────────────────────────────────────────────────────────────
+    async function processFile(file) {
+      if (!API_BASE_URL) { alert("Set API_BASE_URL in the script first."); return; }
+
+      dropZone.style.display = "none";
+      progressArea.classList.add("visible");
+      setStep("step-presign", "active");
+
+      try {
+        // 1. Get presigned URL
+        const presignRes = await fetch(`${API_BASE_URL}/presign?filename=${encodeURIComponent(file.name)}`);
+        if (!presignRes.ok) throw new Error("Presign failed");
+        const { url, key } = await presignRes.json();
+        setStep("step-presign", "done", "Got presigned URL ✓");
+
+        // 2. Upload directly to S3
+        setStep("step-upload", "active", `Uploading ${(file.size / 1024).toFixed(0)} KB…`);
+        const uploadRes = await fetch(url, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": "image/jpeg" },
+        });
+        if (!uploadRes.ok) throw new Error("S3 upload failed");
+        setStep("step-upload", "done", "Uploaded to S3 ✓");
+
+        // 3. Poll for results (Lambda is processing)
+        setStep("step-resize", "active", "Lambda triggered · resizing to 3 sizes…");
+        const images = await pollForResults(key);
+        setStep("step-resize", "done", "Resizing complete ✓");
+        setStep("step-done", "done", "All done!");
+
+        // 4. Show results
+        showResults(images);
+      } catch (err) {
+        ["step-presign","step-upload","step-resize","step-done"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el.classList.contains("active")) setStep(id, "error", err.message);
+        });
+      }
+    }
+
+    async function pollForResults(key, maxAttempts = 20, intervalMs = 2000) {
+      for (let i = 0; i < maxAttempts; i++) {
+        await sleep(intervalMs);
+        const res = await fetch(`${API_BASE_URL}/results?key=${encodeURIComponent(key)}`);
+        const data = await res.json();
+        if (data.status === "done") return data.images;
+        document.getElementById("step-resize-detail").textContent =
+          `Polling… attempt ${i + 1}/${maxAttempts}`;
+      }
+      throw new Error("Timed out waiting for Lambda");
+    }
+
+    function showResults(images) {
+      const sizes = { thumb: "150px wide", medium: "600px wide", large: "1200px wide" };
+      imageGrid.innerHTML = "";
+
+      for (const [name, url] of Object.entries(images)) {
+        const card = document.createElement("div");
+        card.className = "image-card";
+        card.innerHTML = `
+          <img src="${url}" alt="${name}" loading="lazy" />
+          <div class="image-card-info">
+            <div class="image-card-title">${name}</div>
+            <div class="image-card-meta">${sizes[name] ?? ""}</div>
+            <a href="${url}" target="_blank" rel="noopener">Open ↗</a>
+          </div>
+        `;
+        imageGrid.appendChild(card);
+      }
+
+      resultsEl.classList.add("visible");
+      resetBtn.classList.add("visible");
+    }
+
+    resetBtn.addEventListener("click", () => {
+      dropZone.style.display = "";
+      progressArea.classList.remove("visible");
+      resultsEl.classList.remove("visible");
+      resetBtn.classList.remove("visible");
+      ["step-presign","step-upload","step-resize","step-done"].forEach(id => setStep(id, null));
+      fileInput.value = "";
+    });
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+  </script>
+</body>
+</html>

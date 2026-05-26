@@ -1,0 +1,15 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Lambda build artifacts
+lambda/function.zip
+lambda/api_function.zip
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/

@@ -1,0 +1,5 @@
+# Pillow is provided via the Klayers Lambda Layer — no need to bundle it.
+# This file documents the dependency for local development only.
+# To test locally: pip install -r requirements.txt
+Pillow==10.3.0
+boto3==1.34.0
