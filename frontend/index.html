@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Image Resizer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@600;700;800&display=swap" rel="stylesheet" />
   <style>
     /* ── Reset & tokens ───────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -284,9 +284,148 @@
     #reset-btn:hover { border-color: var(--text); color: var(--text); }
     #reset-btn.visible { display: block; }
 
+    /* ── Architecture ─────────────────────────────────────────────── */
+    #architecture {
+      margin-top: 72px;
+      padding-top: 48px;
+      border-top: 1px solid var(--border);
+    }
+
+    .arch-header {
+      margin-bottom: 32px;
+    }
+
+    .arch-title {
+      font-family: var(--font-head);
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .arch-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .arch-section-label {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 16px;
+    }
+
+    .flow-list {
+      list-style: none;
+      margin-bottom: 40px;
+    }
+
+    .flow-item {
+      display: flex;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .flow-item:last-child { border-bottom: none; }
+
+    .flow-num {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--highlight);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    .flow-body strong {
+      display: block;
+      font-family: var(--font-head);
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 3px;
+      color: var(--text);
+    }
+
+    .flow-body span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .service-desc {
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .service-desc code,
+    .flow-body code {
+      font-size: 10px;
+      background: #f0f0ea;
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .flow-body code { font-size: 10px; }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    @media (min-width: 540px) {
+      .services-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .service-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      transition: border-color 0.2s;
+    }
+
+    .service-card:hover { border-color: var(--accent2); }
+
+    .service-name {
+      font-family: var(--font-head);
+      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .service-desc {
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .arch-footnote {
+      margin-top: 24px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.04em;
+    }
+
+    .arch-footnote strong { color: var(--accent); font-weight: 500; }
+
     /* ── Footer ───────────────────────────────────────────────────── */
     footer {
-      margin-top: 64px;
+      margin-top: 48px;
       font-size: 11px;
       color: var(--muted);
       letter-spacing: 0.06em;
@@ -369,6 +508,99 @@
     </div>
 
     <button id="reset-btn">↺ Upload another image</button>
+
+    <!-- Architecture -->
+    <section id="architecture" aria-labelledby="arch-title">
+      <div class="arch-header">
+        <p class="label">Under the hood</p>
+        <h2 class="arch-title" id="arch-title">How it works</h2>
+        <p class="arch-subtitle">For the curious — here's what happens when you drop a file.</p>
+      </div>
+
+      <p class="arch-section-label">The pipeline</p>
+      <ol class="flow-list">
+        <li class="flow-item">
+          <span class="flow-num">1</span>
+          <div class="flow-body">
+            <strong>Presigned upload URL</strong>
+            <span>Browser calls <code>GET /presign</code> → API Gateway → API Lambda generates a one-time S3 PUT URL. No AWS credentials in the browser.</span>
+          </div>
+        </li>
+        <li class="flow-item">
+          <span class="flow-num">2</span>
+          <div class="flow-body">
+            <strong>Direct upload to S3</strong>
+            <span>Browser PUTs the image straight to the private uploads bucket — bypassing Lambda entirely.</span>
+          </div>
+        </li>
+        <li class="flow-item">
+          <span class="flow-num">3</span>
+          <div class="flow-body">
+            <strong>S3 event trigger</strong>
+            <span><code>ObjectCreated</code> on <code>originals/</code> instantly invokes the Resizer Lambda. No queue, no polling.</span>
+          </div>
+        </li>
+        <li class="flow-item">
+          <span class="flow-num">4</span>
+          <div class="flow-body">
+            <strong>Parallel resize</strong>
+            <span>Resizer Lambda downloads the original, uses Pillow to produce thumb / medium / large variants, uploads all three in parallel to the outputs bucket.</span>
+          </div>
+        </li>
+        <li class="flow-item">
+          <span class="flow-num">5</span>
+          <div class="flow-body">
+            <strong>Poll for results</strong>
+            <span>Browser calls <code>GET /results</code> every 2 s until all three variants exist, then receives presigned GET URLs.</span>
+          </div>
+        </li>
+        <li class="flow-item">
+          <span class="flow-num">6</span>
+          <div class="flow-body">
+            <strong>Display &amp; download</strong>
+            <span>Presigned URLs (1-hour expiry) let the browser fetch private S3 objects without making the bucket public.</span>
+          </div>
+        </li>
+      </ol>
+
+      <p class="arch-section-label">AWS services · provisioned by Terraform</p>
+      <div class="services-grid">
+        <div class="service-card">
+          <p class="service-name">API Gateway</p>
+          <p class="service-desc">HTTP API · CORS · <code>/presign</code> &amp; <code>/results</code> routes</p>
+        </div>
+        <div class="service-card">
+          <p class="service-name">Lambda (API)</p>
+          <p class="service-desc">Presigned PUT/GET URLs · results polling · 128 MB</p>
+        </div>
+        <div class="service-card">
+          <p class="service-name">Lambda (Resizer)</p>
+          <p class="service-desc">Pillow layer · 3 parallel variants · 512 MB · 30 s</p>
+        </div>
+        <div class="service-card">
+          <p class="service-name">S3 (uploads)</p>
+          <p class="service-desc">Private · CORS · 1-day lifecycle · event trigger</p>
+        </div>
+        <div class="service-card">
+          <p class="service-name">S3 (outputs)</p>
+          <p class="service-desc">Private · presigned access · 7-day lifecycle</p>
+        </div>
+        <div class="service-card">
+          <p class="service-name">IAM</p>
+          <p class="service-desc">Least-privilege roles · scoped per Lambda &amp; bucket prefix</p>
+        </div>
+        <div class="service-card">
+          <p class="service-name">CloudWatch</p>
+          <p class="service-desc">Lambda logs · 7-day retention</p>
+        </div>
+        <div class="service-card">
+          <p class="service-name">Terraform</p>
+          <p class="service-desc">~20 resources · one <code>apply</code> · zero console clicks</p>
+        </div>
+      </div>
+
+      <p class="arch-footnote">Every resource in this project was provisioned with <strong>Terraform</strong>. No manual AWS console configuration.</p>
+    </section>
 
     <footer>
       Infrastructure as Code ·
