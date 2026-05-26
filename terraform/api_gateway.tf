@@ -122,25 +122,30 @@ def lambda_handler(event, context):
     if path == "/results" and method == "GET":
         params = event.get("queryStringParameters") or {}
         key = params.get("key", "")
-        # The original key looks like: originals/<uuid>-filename.jpg
-        # The resizer writes to: resized/<uuid>-filename/thumb.jpg etc.
         basename = key.replace("originals/", "").rsplit(".", 1)[0]
         prefix = f"resized/{basename}/"
+
+        # Only declare "done" when all three expected variants have been written.
+        # Otherwise the frontend can race the resizer and see only the first
+        # variant (thumb) that gets uploaded.
+        expected = ["thumb", "medium", "large"]
 
         try:
             resp = s3.list_objects_v2(Bucket=OUTPUT_BUCKET, Prefix=prefix)
             objects = resp.get("Contents", [])
-            if not objects:
+            found = {obj["Key"].split("/")[-1].replace(".jpg", ""): obj["Key"] for obj in objects}
+
+            if not set(expected).issubset(found.keys()):
                 return {"statusCode": 202, "headers": headers, "body": json.dumps({"status": "processing"})}
 
-            results = {}
-            for obj in objects:
-                size_name = obj["Key"].split("/")[-1].replace(".jpg", "")
-                results[size_name] = s3.generate_presigned_url(
+            results = {
+                name: s3.generate_presigned_url(
                     "get_object",
-                    Params={"Bucket": OUTPUT_BUCKET, "Key": obj["Key"]},
+                    Params={"Bucket": OUTPUT_BUCKET, "Key": found[name]},
                     ExpiresIn=3600,
                 )
+                for name in expected
+            }
 
             return {"statusCode": 200, "headers": headers, "body": json.dumps({"status": "done", "images": results})}
         except ClientError as e:

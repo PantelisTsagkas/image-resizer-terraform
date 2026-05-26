@@ -453,9 +453,14 @@
 
     function showResults(images) {
       const sizes = { thumb: "150px wide", medium: "600px wide", large: "1200px wide" };
+      const order = ["thumb", "medium", "large"];
       imageGrid.innerHTML = "";
 
-      for (const [name, url] of Object.entries(images)) {
+      const ordered = order
+        .filter(name => images[name])
+        .map(name => [name, images[name]]);
+
+      for (const [name, url] of ordered) {
         const card = document.createElement("div");
         card.className = "image-card";
         card.innerHTML = `
