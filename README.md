@@ -16,6 +16,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python)
 ![IaC](https://img.shields.io/badge/Infrastructure-as%20Code-00C7B7?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Demo%20%2F%20Learning-yellow?style=flat-square)
 
 *Drop an image. Watch it flow through a serverless AWS pipeline. Get back three perfectly resized variants.*
 
@@ -28,6 +29,8 @@
 A fully serverless, event-driven image processing pipeline provisioned entirely with Terraform. Upload an image through the browser — the file travels directly to S3, triggers a Lambda function, gets resized into three variants (thumbnail / medium / large), and the results are served back to you. Zero servers. Zero manual AWS console clicks. Pure Infrastructure as Code.
 
 Built to showcase real-world AWS architecture patterns: presigned URLs, S3 event triggers, Lambda layers, least-privilege IAM, and API Gateway — all reproducible with a single `terraform apply`.
+
+> ⚠️ **Demo / learning project — not production-ready.** This is a portfolio piece to demonstrate AWS and Terraform patterns, not a hardened production service. See [Production Hardening](#production-hardening--what-youd-add-next) for what would need to change before any real-world deployment.
 
 ---
 
@@ -131,7 +134,7 @@ The Resizer Lambda receives the S3 event, downloads the original, and uses **Pil
 | `medium` | 600px     | Blog posts, previews  |
 | `large`  | 1200px    | Full-width display    |
 
-Aspect ratio is always preserved. Images are never upscaled. Output is JPEG with quality 85 and `optimize=True` for efficient file sizes. Pillow isn't bundled with the Lambda — it's delivered via a **Lambda Layer** (Klayers), keeping the deployment package tiny.
+Aspect ratio is always preserved. Images are never upscaled. Output is JPEG with quality 85 and `optimize=True` for efficient file sizes. Pillow isn't bundled with the Lambda — it's delivered via a **[Klayers](https://github.com/keithrozario/Klayers) Lambda Layer** by [Keith Rozario](https://github.com/keithrozario), keeping the deployment package tiny.
 
 Outputs land at:
 ```
@@ -319,7 +322,7 @@ Buckets use `force_destroy = true` — they'll be emptied and deleted automatica
 
 ## Changing Region
 
-The Pillow layer ARN is **fetched dynamically at plan time** from the [Klayers API](https://api.klayers.cloud), so the project works in any region where Klayers publishes a Python 3.12 Pillow layer — without hardcoding ARNs.
+The Pillow layer ARN is **fetched dynamically at plan time** from the [Klayers API](https://api.klayers.cloud) ([Keith Rozario's Klayers project](https://github.com/keithrozario/Klayers)), so the project works in any region where Klayers publishes a Python 3.12 Pillow layer — without hardcoding ARNs.
 
 Just change `aws_region` in `terraform/variables.tf` (or pass `-var aws_region=...` to `terraform apply`) and Terraform resolves the latest valid layer automatically.
 
@@ -346,6 +349,12 @@ image-resizer/
 │   └── index.html          ← Single-file UI, no build step
 └── README.md
 ```
+
+---
+
+## Credits
+
+- **[Klayers](https://github.com/keithrozario/Klayers)** by [Keith Rozario](https://github.com/keithrozario) — community-maintained AWS Lambda layers. The Pillow layer used by the resizer Lambda is fetched from the Klayers API at Terraform plan time, avoiding the need to bundle Pillow manually.
 
 ---
 
