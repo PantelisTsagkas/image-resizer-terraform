@@ -24,6 +24,14 @@
 
 ---
 
+<div align="center">
+
+![Image Resizer — upload UI](image_resizer.png)
+
+</div>
+
+---
+
 ## What is this?
 
 A fully serverless, event-driven image processing pipeline provisioned entirely with Terraform. Upload an image through the browser — the file travels directly to S3, triggers a Lambda function, gets resized into three variants (thumbnail / medium / large), and the results are served back to you. Zero servers. Zero manual AWS console clicks. Pure Infrastructure as Code.
