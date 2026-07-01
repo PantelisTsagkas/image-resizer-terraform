@@ -47,24 +47,24 @@ resource "aws_iam_role_policy" "api_lambda_s3" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "GeneratePresignedUpload"
-        Effect = "Allow"
-        Action = ["s3:PutObject"]
+        Sid      = "GeneratePresignedUpload"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
         Resource = "${aws_s3_bucket.uploads.arn}/originals/*"
       },
       {
-        Sid    = "ListOutputs"
-        Effect = "Allow"
-        Action = ["s3:ListBucket"]
+        Sid      = "ListOutputs"
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
         Resource = aws_s3_bucket.outputs.arn
         Condition = {
           StringLike = { "s3:prefix" = ["resized/*"] }
         }
       },
       {
-        Sid    = "ReadOutputs"
-        Effect = "Allow"
-        Action = ["s3:GetObject"]
+        Sid      = "ReadOutputs"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
         Resource = "${aws_s3_bucket.outputs.arn}/resized/*"
       }
     ]
