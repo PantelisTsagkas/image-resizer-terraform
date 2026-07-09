@@ -18,6 +18,16 @@ resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id
   name        = "$default"
   auto_deploy = true
+
+  # /presign and /results are intentionally public (anyone can try the demo).
+  # Throttling is a cost guardrail, not an access-control change: it caps how
+  # fast an unauthenticated caller can flood /presign and run up S3 upload +
+  # Lambda-invocation cost. Limits apply across the whole stage (all callers
+  # combined). API Gateway throttling is a free feature - no billable resource.
+  default_route_settings {
+    throttling_rate_limit  = 5  # sustained requests/sec
+    throttling_burst_limit = 10 # short burst ceiling
+  }
 }
 
 # ── API Lambda (presigned URL + results lookup) ───────────────────────────────
