@@ -42,9 +42,9 @@ resource "aws_lambda_function" "resizer" {
     }
   }
 
-  tags = {
+  tags = merge(local.app_tags, {
     Project = var.project_name
-  }
+  })
 }
 
 # ── CloudWatch log group with retention ──────────────────────────────────────

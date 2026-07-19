@@ -3,10 +3,10 @@ resource "aws_s3_bucket" "uploads" {
   bucket        = "${var.project_name}-uploads-${random_id.suffix.hex}"
   force_destroy = true
 
-  tags = {
+  tags = merge(local.app_tags, {
     Name    = "${var.project_name}-uploads"
     Project = var.project_name
-  }
+  })
 }
 
 resource "aws_s3_bucket_cors_configuration" "uploads" {
@@ -62,10 +62,10 @@ resource "aws_s3_bucket" "outputs" {
   bucket        = "${var.project_name}-outputs-${random_id.suffix.hex}"
   force_destroy = true
 
-  tags = {
+  tags = merge(local.app_tags, {
     Name    = "${var.project_name}-outputs"
     Project = var.project_name
-  }
+  })
 }
 
 resource "aws_s3_bucket_public_access_block" "outputs" {

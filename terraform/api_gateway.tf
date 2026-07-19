@@ -9,9 +9,9 @@ resource "aws_apigatewayv2_api" "main" {
     allow_origins = ["*"]
   }
 
-  tags = {
+  tags = merge(local.app_tags, {
     Project = var.project_name
-  }
+  })
 }
 
 resource "aws_apigatewayv2_stage" "default" {
@@ -184,7 +184,7 @@ resource "aws_lambda_function" "api" {
     }
   }
 
-  tags = { Project = var.project_name }
+  tags = merge(local.app_tags, { Project = var.project_name })
 }
 
 resource "aws_lambda_permission" "api_gw" {

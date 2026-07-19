@@ -179,6 +179,15 @@ The API Lambda calls `s3.list_objects_v2()` with the expected output prefix. Emp
 
 ---
 
+## myApplications (single-pane view)
+
+Every resource above is registered as one application in the AWS **myApplications** console (AWS Service Catalog AppRegistry), giving a single dashboard for the pipeline's cost, CloudWatch metrics, and security findings.
+This is defined in `appregistry.tf`: it creates the application and exposes its `awsApplication` tag as `local.app_tags`, which is merged into each billable resource's `tags` block (both buckets, both Lambdas, the HTTP API).
+Associating resources through the Terraform config, rather than tagging them out of band, keeps the grouping drift-free: a later `terraform apply` never strips the tag.
+The application, its Resource Group, and the dashboard are free; only the Security Hub widget would incur cost, and it is not enabled.
+
+---
+
 ## Terraform Structure
 
 Terraform is the single source of truth for every AWS resource. Run `terraform destroy` and it all disappears. Run `terraform apply` again and it's all back — identical.
@@ -191,7 +200,8 @@ terraform/
 ├── s3.tf            → Both buckets, CORS, lifecycle rules, S3→Lambda notification
 ├── lambda.tf        → Both Lambdas, Pillow layer ARN map, CloudWatch log group
 ├── iam.tf           → Execution roles, S3 policies, S3 invoke permission
-└── api_gateway.tf   → HTTP API, routes, Lambda integration, API Lambda code
+├── api_gateway.tf   → HTTP API, routes, Lambda integration, API Lambda code
+└── appregistry.tf   → myApplications grouping (AppRegistry app + resource tags)
 ```
 
 Terraform builds a **dependency graph** from resource references. For example:
@@ -349,7 +359,8 @@ image-resizer/
 │   ├── s3.tf
 │   ├── lambda.tf
 │   ├── iam.tf
-│   └── api_gateway.tf
+│   ├── api_gateway.tf
+│   └── appregistry.tf
 ├── lambda/
 │   ├── handler.py          ← Resizer (Pillow)
 │   └── requirements.txt    ← Local dev reference

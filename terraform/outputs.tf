@@ -22,3 +22,13 @@ output "api_lambda_name" {
   description = "Name of the API Lambda function"
   value       = aws_lambda_function.api.function_name
 }
+
+output "application_arn" {
+  description = "ARN of the myApplications / AppRegistry application"
+  value       = aws_servicecatalogappregistry_application.image_resizer.arn
+}
+
+output "application_console_url" {
+  description = "Direct link to the application in the myApplications console"
+  value       = "https://${var.aws_region}.console.aws.amazon.com/systems-manager/appmanager/application/AppManager-AppRegistry-${aws_servicecatalogappregistry_application.image_resizer.id}?region=${var.aws_region}"
+}
